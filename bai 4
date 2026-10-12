@@ -1,0 +1,32 @@
+## Phần 1: So sánh
+
+| Tiêu chí | Toán tử `>` | Toán tử `>>` |
+|---|---|---|
+| Cơ chế hoạt động | Ghi dữ liệu vào file và ghi đè nội dung cũ nếu file đã tồn tại. | Ghi nối tiếp dữ liệu vào cuối file, giữ lại nội dung cũ. |
+| Rủi ro mất dữ liệu | Cao, vì dữ liệu cũ có thể bị xóa khi ghi báo cáo mới. | Thấp hơn, vì dữ liệu cũ được giữ lại. |
+| Ngữ cảnh sử dụng | Phù hợp với báo cáo riêng cho ca sáng hoặc báo cáo cần tạo mới mỗi ngày. | Phù hợp với việc theo dõi lỗi liên tục 24/7 và tích lũy nhật ký nhiều ngày. |
+| Encoding | Trong PowerShell, tương đương `Out-File`, mặc định thường là UTF-16 LE trên Windows PowerShell 5.1. | Tương đương `Out-File -Append`, encoding mặc định phụ thuộc phiên bản PowerShell và cách tạo file. |
+
+**Rủi ro khi dùng nhầm `>`:**
+
+Nếu báo cáo đã tích lũy dữ liệu của 30 ngày trước đó mà An sử dụng `>` để ghi báo cáo mới, nội dung cũ sẽ bị ghi đè và có thể mất toàn bộ lịch sử đã lưu.
+
+## Phần 2: Lựa chọn
+
+Theo em, đối với hệ thống ghi nhật ký lỗi phát sinh liên tục trong ngày, nên sử dụng `>>` hoặc `Add-Content` để ghi nối tiếp dữ liệu. Cách này giúp giữ lại các lỗi đã phát sinh trước đó, thuận tiện cho việc theo dõi và kiểm tra sự cố.
+
+**Cách 1: Sử dụng `>>`**
+
+```powershell
+Get-Content .\server.log | Select-String "ERROR" >> .\daily_report.txt
+```
+
+**Cách 2: Sử dụng `Add-Content` và chỉ định UTF-8**
+
+```powershell
+Get-Content .\server.log | Select-String "ERROR" | ForEach-Object { Add-Content -Path .\daily_report.txt -Value $_.Line -Encoding utf8 }
+```
+
+Cách 2 giúp chủ động chỉ định encoding UTF-8, thuận tiện khi báo cáo có tiếng Việt. Tuy nhiên, nếu cần chạy liên tục 24/7, nên thiết kế thêm cơ chế xoay vòng log theo ngày để tránh tệp tăng dung lượng quá lớn.
+
+**Kết luận:** Em chọn `>>` hoặc `Add-Content` cho việc ghi nối tiếp nhật ký lỗi. Toán tử `>` chỉ nên dùng khi muốn tạo báo cáo mới và chắc chắn không cần giữ lại nội dung cũ.
